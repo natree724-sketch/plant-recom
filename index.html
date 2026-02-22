@@ -1,0 +1,153 @@
+import React, { useState, useCallback } from 'react';
+import { AppState } from './types';
+import type { PlantRecommendation } from './types';
+import { QUIZ_QUESTIONS, PLANT_RECOMMENDATIONS } from './constants';
+import Quiz from './components/Quiz';
+import Recommendation from './components/Recommendation';
+import LoadingSpinner from './components/LoadingSpinner';
+
+const WelcomeScreen: React.FC<{ onStart: () => void }> = ({ onStart }) => (
+    <div className="text-center p-8 bg-white rounded-2xl shadow-lg max-w-lg mx-auto">
+        <h1 className="text-4xl font-extrabold text-green-800 mb-2">나의 식물 MBTI 찾기</h1>
+        <p className="text-gray-600 mb-6 text-lg">나와 꼭 맞는 반려식물은 무엇일까요?</p>
+        <p className="text-gray-700 mb-8">
+            10가지 간단한 질문에 답하고<br/>당신의 성향에 딱 맞는 식물을 추천받아보세요!
+        </p>
+        <button
+            onClick={onStart}
+            className="bg-green-600 text-white font-bold py-4 px-10 rounded-full text-xl hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 transform hover:scale-105"
+        >
+            시작하기
+        </button>
+    </div>
+);
+
+function App() {
+  const [appState, setAppState] = useState<AppState>(AppState.Welcome);
+  const [answers, setAnswers] = useState<string[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
+  const [recommendation, setRecommendation] = useState<PlantRecommendation | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleStart = () => {
+    setAppState(AppState.Quiz);
+  };
+
+  const handleRestart = () => {
+    setAppState(AppState.Welcome);
+    setAnswers([]);
+    setCurrentQuestionIndex(0);
+    setRecommendation(null);
+    setError(null);
+  };
+
+  const handleBack = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+      setAnswers(prevAnswers => prevAnswers.slice(0, -1));
+    }
+  };
+
+  const calculateRecommendation = (finalAnswers: string[]): PlantRecommendation => {
+    // Simple logic to map answers to plants
+    const isExtrovert = finalAnswers[0] === 'E';
+    const isSensing = finalAnswers[1] === 'S';
+    const isThinking = finalAnswers[2] === 'T';
+    const isJudging = finalAnswers[3] === 'J';
+    const isRoutine = finalAnswers[4] === 'Routine';
+    const isPatient = finalAnswers[5] === 'Patient';
+    const isDetail = finalAnswers[6] === 'Detail';
+    const isSunny = finalAnswers[7] === 'Sunny';
+    const isHighCare = finalAnswers[8] === 'HighCare';
+    const isExperienced = finalAnswers[9] === 'Experienced';
+
+    if (isExtrovert && isHighCare && isSunny) return PLANT_RECOMMENDATIONS["Monstera"];
+    if (!isExtrovert && !isHighCare && !isSunny && !isExperienced) return PLANT_RECOMMENDATIONS["Stuckyi"];
+    if (!isExtrovert && !isHighCare && !isSunny) return PLANT_RECOMMENDATIONS["Sansevieria"];
+    if (isExtrovert && isDetail && isSunny) return PLANT_RECOMMENDATIONS["Rosemary"];
+    if (!isExtrovert && !isPatient) return PLANT_RECOMMENDATIONS["Marimo"];
+    if (!isExtrovert && !isDetail) return PLANT_RECOMMENDATIONS["TablePalm"];
+    if (isSensing && !isHighCare) return PLANT_RECOMMENDATIONS["Succulent"];
+    if (!isJudging && !isRoutine) return PLANT_RECOMMENDATIONS["Ivy"];
+    
+    // Default fallback
+    return PLANT_RECOMMENDATIONS["Monstera"];
+  };
+
+  const fetchRecommendation = useCallback(async (finalAnswers: string[]) => {
+    setAppState(AppState.Loading);
+    setError(null);
+    
+    // Simulate loading for better UX
+    setTimeout(() => {
+      try {
+        const result = calculateRecommendation(finalAnswers);
+        setRecommendation(result);
+        setAppState(AppState.Result);
+      } catch (err: any) {
+        setError('추천 결과를 계산하는 중 오류가 발생했습니다.');
+        setAppState(AppState.Result);
+      }
+    }, 1500);
+  }, []);
+
+  const handleAnswer = (value: string) => {
+    const newAnswers = [...answers, value];
+    setAnswers(newAnswers);
+
+    if (currentQuestionIndex < QUIZ_QUESTIONS.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    } else {
+      fetchRecommendation(newAnswers);
+    }
+  };
+
+  const renderContent = () => {
+    switch (appState) {
+      case AppState.Quiz:
+        return (
+          <Quiz
+            question={QUIZ_QUESTIONS[currentQuestionIndex]}
+            onAnswer={handleAnswer}
+            onBack={handleBack}
+            progress={(currentQuestionIndex + 1) / QUIZ_QUESTIONS.length}
+            isFirstQuestion={currentQuestionIndex === 0}
+          />
+        );
+      case AppState.Loading:
+        return <LoadingSpinner />;
+      case AppState.Result:
+        if (error) {
+          return (
+            <div className="text-center p-8 bg-white rounded-2xl shadow-lg max-w-lg mx-auto">
+                <h2 className="text-2xl font-bold text-red-600 mb-4">오류가 발생했습니다</h2>
+                <p className="text-gray-700 mb-6">{error}</p>
+                <button
+                    onClick={handleRestart}
+                    className="bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700"
+                >
+                    처음으로 돌아가기
+                </button>
+            </div>
+          );
+        }
+        if (recommendation) {
+          return <Recommendation recommendation={recommendation} onRestart={handleRestart} />;
+        }
+        return null;
+      case AppState.Welcome:
+      default:
+        return <WelcomeScreen onStart={handleStart} />;
+    }
+  };
+
+  return (
+    <main className="min-h-screen w-full flex items-center justify-center p-4 bg-gradient-to-br from-green-100 to-amber-100">
+      <div className="container mx-auto">
+        {renderContent()}
+      </div>
+    </main>
+  );
+}
+
+export default App;
