@@ -1,5 +1,10 @@
 import streamlit as st
 import time
+# google-generativeai is required for some environments to initialize correctly
+try:
+    import google.generativeai as genai
+except ImportError:
+    pass
 
 # 페이지 설정
 st.set_page_config(page_title="나만의 반려식물 찾기 (Plant MBTI)", page_icon="🌱", layout="centered")
@@ -19,16 +24,27 @@ st.markdown("""
     }
 
     .stButton>button {
-        width: 100%;
-        border-radius: 20px;
-        height: 3em;
+        width: 100% !important;
+        border-radius: 20px !important;
+        height: auto !important;
+        min-height: 3.5em !important;
         background-color: #2e7d32 !important;
         color: #ffffff !important;
-        font-weight: bold;
-        border: none;
+        font-weight: bold !important;
+        border: none !important;
+        margin-bottom: 0.5rem !important;
+        padding: 0.5rem 1rem !important;
+        display: block !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
     }
     .stButton>button:hover {
         background-color: #1b5e20 !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+    }
+    /* 특정 버튼 텍스트 색상 강제 (Streamlit 기본 스타일 방지) */
+    .stButton>button p {
         color: #ffffff !important;
     }
     .plant-title {
@@ -68,7 +84,7 @@ PLANT_RECOMMENDATIONS = {
         "water": "겉흙이 말랐을 때 듬뿍 주세요. (주 1~2회)",
         "light": "밝은 그늘이나 반양지를 좋아해요.",
         "tip": "잎의 먼지를 닦아주면 광합성에 도움이 됩니다.",
-        "imageUrl": "https://images.unsplash.com/photo-1614594975525-e45190c55d0b?auto=format&fit=crop&q=80&w=800"
+        "imageUrl": "https://images.unsplash.com/photo-1614594975525-e45190c55d0b?q=80&w=1000&auto=format&fit=crop"
     },
     "Sansevieria": {
         "plantName": "산세베리아",
@@ -76,7 +92,7 @@ PLANT_RECOMMENDATIONS = {
         "water": "흙이 바짝 말랐을 때 주세요. (한 달에 1회 정도)",
         "light": "어느 곳에서나 잘 자라지만, 밝은 곳을 더 좋아해요.",
         "tip": "과습에 주의해야 하므로 물을 자주 주지 마세요.",
-        "imageUrl": "https://images.unsplash.com/photo-1593482892290-f54927ae1b6c?auto=format&fit=crop&q=80&w=800"
+        "imageUrl": "https://images.unsplash.com/photo-1593482892290-f54927ae1b6c?q=80&w=1000&auto=format&fit=crop"
     },
     "Marimo": {
         "plantName": "마리모",
@@ -84,7 +100,7 @@ PLANT_RECOMMENDATIONS = {
         "water": "주 1회 깨끗한 물로 갈아주세요.",
         "light": "직사광선은 피하고 시원한 곳에 두세요.",
         "tip": "기분이 좋으면 물 위로 둥둥 떠오른답니다!",
-        "imageUrl": "https://images.unsplash.com/photo-1620127252536-03bdfcf6d5c3?auto=format&fit=crop&q=80&w=800"
+        "imageUrl": "https://images.unsplash.com/photo-1516233758813-a38d024919c5?q=80&w=1000&auto=format&fit=crop"
     },
     "Rosemary": {
         "plantName": "로즈마리",
@@ -92,7 +108,7 @@ PLANT_RECOMMENDATIONS = {
         "water": "겉흙이 마르면 듬뿍 주세요. 통풍이 중요해요.",
         "light": "햇빛이 아주 잘 드는 창가가 최적입니다.",
         "tip": "가끔 잎을 쓰다듬어 향기를 맡아보세요.",
-        "imageUrl": "https://images.unsplash.com/photo-1515519106129-44644d75400a?auto=format&fit=crop&q=80&w=800"
+        "imageUrl": "https://images.unsplash.com/photo-1515519106129-44644d75400a?q=80&w=1000&auto=format&fit=crop"
     },
     "Stuckyi": {
         "plantName": "스투키",
@@ -100,7 +116,7 @@ PLANT_RECOMMENDATIONS = {
         "water": "한 달에 한 번 정도 흙이 마르면 주세요.",
         "light": "반음지에서도 잘 견디지만 햇빛을 보면 더 건강해요.",
         "tip": "통통한 줄기에 물을 저장하므로 과습은 금물입니다.",
-        "imageUrl": "https://images.unsplash.com/photo-1616848767011-09f84994bb5a?auto=format&fit=crop&q=80&w=800"
+        "imageUrl": "https://images.unsplash.com/photo-1616848767011-09f84994bb5a?q=80&w=1000&auto=format&fit=crop"
     },
     "TablePalm": {
         "plantName": "테이블야자",
@@ -108,7 +124,7 @@ PLANT_RECOMMENDATIONS = {
         "water": "겉흙이 마르면 듬뿍 주세요. 분무를 좋아해요.",
         "light": "강한 햇빛보다는 은은한 밝은 그늘이 좋아요.",
         "tip": "건조하면 잎 끝이 탈 수 있으니 자주 분무해주세요.",
-        "imageUrl": "https://images.unsplash.com/photo-1599598425947-5202ed562112?auto=format&fit=crop&q=80&w=800"
+        "imageUrl": "https://images.unsplash.com/photo-1599598425947-5202ed562112?q=80&w=1000&auto=format&fit=crop"
     },
     "Succulent": {
         "plantName": "다육이",
@@ -116,7 +132,7 @@ PLANT_RECOMMENDATIONS = {
         "water": "잎이 쪼글거릴 때 듬뿍 주세요. (월 1~2회)",
         "light": "햇빛을 아주 많이 좋아합니다.",
         "tip": "햇빛이 부족하면 웃자랄 수 있으니 주의하세요.",
-        "imageUrl": "https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?auto=format&fit=crop&q=80&w=800"
+        "imageUrl": "https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?q=80&w=1000&auto=format&fit=crop"
     },
     "Ivy": {
         "plantName": "아이비",
@@ -124,7 +140,7 @@ PLANT_RECOMMENDATIONS = {
         "water": "겉흙이 마르면 듬뿍 주세요.",
         "light": "반양지나 반음지 어디서든 잘 적응합니다.",
         "tip": "수경재배로도 아주 잘 자라는 기특한 식물입니다.",
-        "imageUrl": "https://images.unsplash.com/photo-1598880940080-ff9a29891b85?auto=format&fit=crop&q=80&w=800"
+        "imageUrl": "https://images.unsplash.com/photo-1598880940080-ff9a29891b85?q=80&w=1000&auto=format&fit=crop"
     }
 }
 
@@ -133,9 +149,14 @@ QUIZ_QUESTIONS = [
     {"text": "새로운 장소에 갔을 때, 당신의 행동은?", "options": [("지도를 보며 계획된 경로로 움직인다", "S"), ("마음이 이끄는 대로 골목골목을 탐험한다", "N")]},
     {"text": "친구가 고민을 털어놓을 때, 당신의 반응은?", "options": [("객관적인 해결책을 찾아주려 노력한다", "T"), ("따뜻한 말로 공감하고 위로해준다", "F")]},
     {"text": "여행을 떠나기 전, 당신의 모습은?", "options": [("숙소, 교통, 맛집까지 꼼꼼히 계획한다", "J"), ("항공권만 끊고 나머지는 자유롭게 결정한다", "P")]},
-    {"text": "당신은 정해진 루틴을 따르는 것을...", "options": [("선호하며, 안정감을 느낀다", "Routine"), ("답답하게 느끼며, 변화를 즐긴다", "Change")]},
-    {"text": "무언가를 기다려야 할 때, 당신은 어떤 편인가요?", "options": [("느긋하게 기다릴 수 있다", "Patient"), ("조금 조급해지는 경향이 있다", "Impatient")]},
-    {"text": "집 안의 작은 변화를 잘 알아채는 편인가요?", "options": [("그렇다. 디테일에 강하다", "Detail"), ("아니다. 전체적인 분위기를 본다", "Global")]},
+    {"text": "당신은 정해진 루틴을 따르는 것을...", "options": [("선호하며, 안정감을 느낀다", "J"), ("답답하게 느끼며, 변화를 즐긴다", "P")]},
+    {"text": "에너지를 얻는 방법은?", "options": [("사람들과 대화하며 얻는다", "E"), ("혼자만의 시간을 가지며 얻는다", "I")]},
+    {"text": "사물을 볼 때 당신의 스타일은?", "options": [("세부적인 디테일을 먼저 본다", "S"), ("전체적인 분위기를 먼저 본다", "N")]},
+    {"text": "중요한 결정을 내릴 때 더 중시하는 것은?", "options": [("논리적인 근거와 사실", "T"), ("나의 가치관과 주변의 감정", "F")]},
+    {"text": "당신의 책상이나 방 상태는?", "options": [("항상 정돈되어 있고 물건 위치가 정해져 있다", "J"), ("자유롭게 흐트러져 있는 편이다", "P")]},
+    {"text": "모임에서 당신은 주로...", "options": [("먼저 말을 걸고 분위기를 주도한다", "E"), ("주로 듣는 편이며 조용히 있는다", "I")]},
+    {"text": "새로운 일을 시작할 때 당신은?", "options": [("현실적으로 가능한지 먼저 따진다", "S"), ("어떤 새로운 가능성이 있을지 상상한다", "N")]},
+    {"text": "다른 사람에게 피드백을 줄 때?", "options": [("솔직하고 객관적으로 말한다", "T"), ("상대방이 상처받지 않게 돌려 말한다", "F")]},
     {"text": "당신의 공간은 햇빛이 잘 드나요?", "options": [("네, 햇살이 가득한 편이에요", "Sunny"), ("아니요, 그늘진 편이에요", "Shady")]},
     {"text": "반려식물을 돌보는 데 얼마나 시간을 쓸 수 있나요?", "options": [("매일 애정을 쏟으며 돌보고 싶다", "HighCare"), ("가끔씩만 신경 써줘도 잘 자랐으면 좋겠다", "LowCare")]},
     {"text": "식물을 키워본 경험이 있나요?", "options": [("네, 여러 번 키워봤어요", "Experienced"), ("아니요, 처음이에요", "Beginner")]},
@@ -158,7 +179,7 @@ def restart():
 if st.session_state.step == 'welcome':
     st.title("🌱 나의 식물 MBTI 찾기")
     st.write("나와 꼭 맞는 반려식물은 무엇일까요?")
-    st.write("10가지 간단한 질문에 답하고 당신의 성향에 딱 맞는 식물을 추천받아보세요!")
+    st.write("15가지 간단한 질문에 답하고 당신의 성향에 딱 맞는 식물을 추천받아보세요!")
     if st.button("시작하기"):
         st.session_state.step = 'quiz'
         st.rerun()
@@ -192,31 +213,49 @@ elif st.session_state.step == 'loading':
 
 elif st.session_state.step == 'result':
     ans = st.session_state.answers
-    # 추천 로직 (React 앱과 동일)
+    
+    # MBTI 계산
+    e_count = ans.count('E')
+    i_count = ans.count('I')
+    s_count = ans.count('S')
+    n_count = ans.count('N')
+    t_count = ans.count('T')
+    f_count = ans.count('F')
+    j_count = ans.count('J')
+    p_count = ans.count('P')
+    
+    mbti = ""
+    mbti += "E" if e_count >= i_count else "I"
+    mbti += "S" if s_count >= n_count else "N"
+    mbti += "T" if t_count >= f_count else "F"
+    mbti += "J" if j_count >= p_count else "P"
+    
+    # 환경/경험 변수
+    isSunny = "Sunny" in ans
+    isHighCare = "HighCare" in ans
+    isExperienced = "Experienced" in ans
+
+    # 추천 로직 (MBTI 기반 + 환경 고려)
     res_key = "Monstera" # 기본값
     
-    isExtrovert = ans[0] == 'E'
-    isSensing = ans[1] == 'S'
-    isThinking = ans[2] == 'T'
-    isJudging = ans[3] == 'J'
-    isRoutine = ans[4] == 'Routine'
-    isPatient = ans[5] == 'Patient'
-    isDetail = ans[6] == 'Detail'
-    isSunny = ans[7] == 'Sunny'
-    isHighCare = ans[8] == 'HighCare'
-    isExperienced = ans[9] == 'Experienced'
-
-    if isExtrovert and isHighCare and isSunny: res_key = "Monstera"
-    elif not isExtrovert and not isHighCare and not isSunny and not isExperienced: res_key = "Stuckyi"
-    elif not isExtrovert and not isHighCare and not isSunny: res_key = "Sansevieria"
-    elif isExtrovert and isDetail and isSunny: res_key = "Rosemary"
-    elif not isExtrovert and not isPatient: res_key = "Marimo"
-    elif not isExtrovert and not isDetail: res_key = "TablePalm"
-    elif isSensing and not isHighCare: res_key = "Succulent"
-    elif not isJudging and not isRoutine: res_key = "Ivy"
+    if mbti == "ENFP" or mbti == "ENTP": res_key = "Monstera"
+    elif mbti == "ISTJ" or mbti == "ISFJ": res_key = "Sansevieria"
+    elif mbti == "INFP" or mbti == "ISFP": res_key = "Marimo"
+    elif mbti == "ESTJ" or mbti == "ENTJ": res_key = "Rosemary"
+    elif mbti == "INTJ" or mbti == "ISTP": res_key = "Stuckyi"
+    elif mbti == "INFJ" or mbti == "ENFJ": res_key = "TablePalm"
+    elif mbti == "ESTP" or mbti == "ESFP": res_key = "Succulent"
+    elif mbti == "INTP" or mbti == "ESFJ": res_key = "Ivy"
     
+    # 환경에 따른 미세 조정
+    if not isSunny and res_key in ["Rosemary", "Succulent"]:
+        res_key = "Sansevieria"
+    if isHighCare and res_key == "Stuckyi":
+        res_key = "Monstera"
+
     plant = PLANT_RECOMMENDATIONS[res_key]
     
+    st.markdown(f"<h2 style='text-align: center; color: #2e7d32;'>당신의 식물 MBTI는 <span style='color: #1b5e20;'>{mbti}</span> 입니다!</h2>", unsafe_allow_html=True)
     st.markdown(f"<h2 style='text-align: center; color: #2e7d32;'>당신을 위한 반려식물은...</h2>", unsafe_allow_html=True)
     st.markdown(f"<h1 class='plant-title'>{plant['plantName']}</h1>", unsafe_allow_html=True)
     
