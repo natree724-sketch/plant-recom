@@ -7,34 +7,55 @@ st.set_page_config(page_title="나만의 반려식물 찾기 (Plant MBTI)", page
 # 스타일 설정
 st.markdown("""
     <style>
-    .main {
-        background-color: #f0f9f0;
+    /* 전체 배경색 및 기본 텍스트 색상 강제 지정 */
+    .stApp {
+        background-color: #ffffff !important;
+        color: #1a1a1a !important;
     }
+    
+    /* 모든 텍스트 요소에 색상 적용 */
+    h1, h2, h3, h4, p, span, div, label {
+        color: #1a1a1a !important;
+    }
+
     .stButton>button {
         width: 100%;
         border-radius: 20px;
         height: 3em;
-        background-color: #2e7d32;
-        color: white;
+        background-color: #2e7d32 !important;
+        color: #ffffff !important;
         font-weight: bold;
+        border: none;
     }
     .stButton>button:hover {
-        background-color: #1b5e20;
-        border: none;
+        background-color: #1b5e20 !important;
+        color: #ffffff !important;
     }
     .plant-title {
         font-size: 3rem;
         font-weight: 800;
-        color: #2e7d32;
+        color: #2e7d32 !important;
         text-align: center;
         margin-bottom: 0.5rem;
     }
     .care-card {
-        background-color: #ffffff;
+        background-color: #f9f9f9 !important;
         padding: 1.5rem;
         border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         margin-bottom: 1rem;
+    }
+    .care-card h3, .care-card b {
+        color: #2e7d32 !important;
+    }
+    .care-card p, .care-card small {
+        color: #444444 !important;
+    }
+    
+    /* 프로그레스 바 색상 */
+    .stProgress > div > div > div > div {
+        background-color: #2e7d32 !important;
     }
     </style>
     """, unsafe_allow_html=True)
